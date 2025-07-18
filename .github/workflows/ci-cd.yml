@@ -90,6 +90,9 @@ jobs:
           echo "Waiting for rollout of $DEPLOYMENT_NAME"
           kubectl rollout status deployment/$DEPLOYMENT_NAME
 
+      - name: Debug - Get all services
+        run: kubectl get svc
+
       - name: Curl the service
         run: |
           echo "Waiting for deployment to become available..."
@@ -98,7 +101,7 @@ jobs:
           echo "Trying to curl the service inside the cluster..."
           for i in {1..5}; do
             RESP=$(kubectl run curl --image=curlimages/curl:8.8.0 -i --rm --restart=Never -- \
-                   curl -s http://demo-release:8080/old) && break
+                   curl -s http://demo-release-demo:8080/old) && break
             echo "Attempt $i failed, retrying..."
             sleep 5
           done
