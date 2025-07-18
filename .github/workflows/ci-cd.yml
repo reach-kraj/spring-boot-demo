@@ -81,11 +81,11 @@ jobs:
 
       - name: Deploy with Helm
         run: |
-          helm upgrade --install spring-boot-demo-release ./helm/spring-boot-demo \
+          helm upgrade --install demo-release ./helm/demo \
             --set image.repository=${{ env.IMAGE_NAME }} \
             --set image.tag=${{ github.sha }} \
             --wait
-          kubectl rollout status deploy/spring-boot-demo-release
+          kubectl rollout status deploy/demo-release
 
       # Simple smoke test inside the KinD cluster
       - name: Curl the service
