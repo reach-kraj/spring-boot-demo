@@ -7,7 +7,7 @@ on:
 
 env:
   REGISTRY: docker.io
-  IMAGE_NAME: kraj28/demo
+  IMAGE_NAME: kraj28/spring-boot-demo
 
 jobs:
   build:
@@ -81,11 +81,11 @@ jobs:
 
       - name: Deploy with Helm
         run: |
-          helm upgrade --install demo-release ./helm/demo \
+          helm upgrade --install spring-boot-demo-release ./helm/spring-boot-demo \
             --set image.repository=${{ env.IMAGE_NAME }} \
             --set image.tag=${{ github.sha }} \
             --wait
-          kubectl rollout status deploy/demo-release
+          kubectl rollout status deploy/spring-boot-demo-release
 
       # Simple smoke test inside the KinD cluster
       - name: Curl the service
