@@ -85,9 +85,12 @@ jobs:
             --set image.repository=${{ env.IMAGE_NAME }} \
             --set image.tag=${{ github.sha }} \
             --wait
-          kubectl rollout status deploy/demo-release
 
-      # Simple smoke test inside the KinD cluster
+          # rollout status for correct deployment name
+          DEPLOYMENT_NAME="demo-release-demo"
+          echo "Waiting for rollout of $DEPLOYMENT_NAME"
+          kubectl rollout status deployment/$DEPLOYMENT_NAME
+
       - name: Curl the service
         run: |
           RESP=$(kubectl run curl --image=curlimages/curl:8.8.0 -i --rm --restart=Never -- \
