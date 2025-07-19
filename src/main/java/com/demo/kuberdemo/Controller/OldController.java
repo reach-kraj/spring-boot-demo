@@ -12,4 +12,9 @@ public class OldController {
     public String old() {
         return "Hello from OLD code 👋";
     }
+
+//    @GetMapping("/new")
+//    public String newCommit(){
+//        return "Hello from newly commited code 👋";
+//    }
 }

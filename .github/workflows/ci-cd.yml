@@ -46,7 +46,7 @@ jobs:
             ${{ env.IMAGE_NAME }}:${{ github.sha }}
             ${{ env.IMAGE_NAME }}:latest
 
-      - name: Upload chart
+      - name: Upload Helm chart
         uses: actions/upload-artifact@v4
         with:
           name: helm-chart
@@ -59,7 +59,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download chart
+      - name: Download Helm chart
         uses: actions/download-artifact@v4
         with:
           name: helm-chart
@@ -86,25 +86,8 @@ jobs:
             --set image.tag=${{ github.sha }} \
             --wait
 
-          DEPLOYMENT_NAME="demo-release-demo"
-          echo "Waiting for rollout of $DEPLOYMENT_NAME"
-          kubectl rollout status deployment/$DEPLOYMENT_NAME
+          echo "Waiting for rollout to complete..."
+          kubectl rollout status deployment/demo-release-demo
 
-      - name: Debug - Get all services
-        run: kubectl get svc
-
-      - name: Curl the service
-        run: |
-          echo "Waiting for deployment to become available..."
-          kubectl wait --for=condition=available --timeout=60s deployment/demo-release-demo
-
-          echo "Trying to curl the service inside the cluster..."
-          for i in {1..5}; do
-            RESP=$(kubectl run curl --image=curlimages/curl:8.8.0 -i --rm --restart=Never -- \
-                   curl -s http://demo-release-demo:8080/old) && break
-            echo "Attempt $i failed, retrying..."
-            sleep 5
-          done
-
-          echo "Response: $RESP"
-          [[ "$RESP" == *"OLD code"* ]] || (echo "Unexpected response" && exit 1)
+      - name: Run Smoke Test
+        run: ./scripts/smoke-test.sh
