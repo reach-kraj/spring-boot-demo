@@ -1,4 +1,4 @@
-name: CI/CD with Monitoring
+name: CI/CD
 
 on:
   push:
@@ -12,6 +12,7 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
 
@@ -45,50 +46,30 @@ jobs:
             ${{ env.IMAGE_NAME }}:${{ github.sha }}
             ${{ env.IMAGE_NAME }}:latest
 
-      - name: Upload artifacts
+      - name: Upload Helm chart
         uses: actions/upload-artifact@v4
         with:
-          name: deployment-artifacts
-          path: |
-            helm/
-            scripts/
-            monitoring/
+          name: helm-chart
+          path: helm
 
   deploy:
     needs: build
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download artifacts
+      - name: Download Helm chart
         uses: actions/download-artifact@v4
         with:
-          name: deployment-artifacts
+          name: helm-chart
+          path: helm
 
-      - name: Create KinD cluster with ingress
+      - name: Create KinD cluster
         uses: container-tools/kind-action@v2
         with:
           wait: 120s
           version: v0.23.0
-          config: |
-            kind: Cluster
-            apiVersion: kind.x-k8s.io/v1alpha4
-            nodes:
-            - role: control-plane
-              kubeadmConfigPatches:
-              - |
-                kind: InitConfiguration
-                nodeRegistration:
-                  kubeletExtraArgs:
-                    node-labels: "ingress-ready=true"
-              extraPortMappings:
-              - containerPort: 80
-                hostPort: 80
-                protocol: TCP
-              - containerPort: 443
-                hostPort: 443
-                protocol: TCP
-      
 
       - name: Install kubectl
         uses: azure/setup-kubectl@v4
@@ -98,49 +79,15 @@ jobs:
         with:
           version: v3.14.2
 
-      - name: Install NGINX Ingress Controller
-        run: |
-          kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
-          kubectl wait --namespace ingress-nginx \
-            --for=condition=ready pod \
-            --selector=app.kubernetes.io/component=controller \
-            --timeout=90s
-
-      - name: Setup monitoring stack
-        run: |
-          chmod +x scripts/setup-monitoring.sh
-          ./scripts/setup-monitoring.sh
-
-      - name: Deploy application
+      - name: Deploy with Helm
         run: |
           helm upgrade --install demo-release ./helm/demo \
             --set image.repository=${{ env.IMAGE_NAME }} \
             --set image.tag=${{ github.sha }} \
-            --set monitoring.enabled=true \
-            --set ingress.enabled=true \
             --wait
 
+          echo "Waiting for rollout to complete..."
           kubectl rollout status deployment/demo-release-demo
 
-      - name: Run smoke tests
-        run: |
-          chmod +x scripts/smoke-test.sh
-          ./scripts/smoke-test.sh
-
-      - name: Generate monitoring reports
-        run: |
-          chmod +x scripts/generate-reports.sh
-          ./scripts/generate-reports.sh
-
-      - name: Export monitoring data
-        run: |
-          chmod +x scripts/export-monitoring-data.sh
-          ./scripts/export-monitoring-data.sh
-
-      - name: Upload monitoring artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: monitoring-reports
-          path: |
-            reports/
-            monitoring-data/
+      - name: Run Smoke Test
+        run: ./scripts/smoke-test.sh
