@@ -1,7 +1,41 @@
 image:
-  repository: kraj28/demo   # will be overridden in the workflow
+  repository: kraj28/demo
   tag: "latest"
   pullPolicy: IfNotPresent
 
 service:
   port: 8080
+
+# Ingress configuration
+ingress:
+  enabled: false
+  host: demo.local
+
+# Monitoring configuration
+monitoring:
+  enabled: true
+
+# Resource limits
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 250m
+    memory: 256Mi
+
+# Health checks
+healthcheck:
+  enabled: true
+  livenessProbe:
+    httpGet:
+      path: /actuator/health/liveness
+      port: 8080
+    initialDelaySeconds: 30
+    periodSeconds: 10
+  readinessProbe:
+    httpGet:
+      path: /actuator/health/readiness
+      port: 8080
+    initialDelaySeconds: 15
+    periodSeconds: 5
